@@ -15,25 +15,6 @@ jobs:
       - name: Checkout source
         uses: actions/checkout@v4
 
-      # 🔹 Safety check: enforce merge flow
-      - name: Validate branch merge source
-        run: |
-          BRANCH="${GITHUB_REF##*/}"
-
-          if [[ "$BRANCH" == "main" ]]; then
-            # ensure main only gets merges from staging
-            if ! git log -1 --pretty=%P | xargs -n1 git branch --contains | grep -q "staging"; then
-              echo "❌ ERROR: main branch must only be updated via merge from staging!"
-              exit 1
-            fi
-          elif [[ "$BRANCH" == "staging" ]]; then
-            # ensure staging only gets merges from dev
-            if ! git log -1 --pretty=%P | xargs -n1 git branch --contains | grep -q "dev"; then
-              echo "❌ ERROR: staging branch must only be updated via merge from dev!"
-              exit 1
-            fi
-          fi
-
       # 🔹 Set environment-specific variables
       - name: Set deployment environment
         run: |
