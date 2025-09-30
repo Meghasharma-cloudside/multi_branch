@@ -1,0 +1,114 @@
+name: CD - Build & Deploy to ECS
+
+on:
+  push:
+    branches:
+      - main
+      - staging
+      - dev
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v4
+
+      # 🔹 Safety check: enforce merge flow
+      - name: Validate branch merge source
+        run: |
+          BRANCH="${GITHUB_REF##*/}"
+
+          if [[ "$BRANCH" == "main" ]]; then
+            # ensure main only gets merges from staging
+            if ! git log -1 --pretty=%P | xargs -n1 git branch --contains | grep -q "staging"; then
+              echo "❌ ERROR: main branch must only be updated via merge from staging!"
+              exit 1
+            fi
+          elif [[ "$BRANCH" == "staging" ]]; then
+            # ensure staging only gets merges from dev
+            if ! git log -1 --pretty=%P | xargs -n1 git branch --contains | grep -q "dev"; then
+              echo "❌ ERROR: staging branch must only be updated via merge from dev!"
+              exit 1
+            fi
+          fi
+
+      # 🔹 Set environment-specific variables
+      - name: Set deployment environment
+        run: |
+          BRANCH="${GITHUB_REF##*/}"
+
+          if [[ "$BRANCH" == "main" ]]; then
+            echo "AWS_ACCESS_KEY_ID=${{ secrets.PROD_AWS_ACCESS_KEY_ID }}" >> $GITHUB_ENV
+            echo "AWS_SECRET_ACCESS_KEY=${{ secrets.PROD_AWS_SECRET_ACCESS_KEY }}" >> $GITHUB_ENV
+            echo "AWS_REGION=us-east-1" >> $GITHUB_ENV
+            echo "CLUSTER=my-prod-cluster" >> $GITHUB_ENV
+            echo "SERVICE=my-prod-service" >> $GITHUB_ENV
+            echo "ECR_REPO=my-app-prod" >> $GITHUB_ENV
+            echo "TASKDEF_FILE=infra/td-prod.json" >> $GITHUB_ENV
+
+          elif [[ "$BRANCH" == "staging" ]]; then
+            echo "AWS_ACCESS_KEY_ID=${{ secrets.STAGING_AWS_ACCESS_KEY_ID }}" >> $GITHUB_ENV
+            echo "AWS_SECRET_ACCESS_KEY=${{ secrets.STAGING_AWS_SECRET_ACCESS_KEY }}" >> $GITHUB_ENV
+            echo "AWS_REGION=us-east-2" >> $GITHUB_ENV
+            echo "CLUSTER=my-staging-cluster" >> $GITHUB_ENV
+            echo "SERVICE=my-staging-service" >> $GITHUB_ENV
+            echo "ECR_REPO=my-app-staging" >> $GITHUB_ENV
+            echo "TASKDEF_FILE=infra/td-staging.json" >> $GITHUB_ENV
+
+          else
+            echo "AWS_ACCESS_KEY_ID=${{ secrets.DEV_AWS_ACCESS_KEY_ID }}" >> $GITHUB_ENV
+            echo "AWS_SECRET_ACCESS_KEY=${{ secrets.DEV_AWS_SECRET_ACCESS_KEY }}" >> $GITHUB_ENV
+            echo "AWS_REGION=us-west-2" >> $GITHUB_ENV
+            echo "CLUSTER=my-dev-cluster" >> $GITHUB_ENV
+            echo "SERVICE=my-dev-service" >> $GITHUB_ENV
+            echo "ECR_REPO=my-app-dev" >> $GITHUB_ENV
+            echo "TASKDEF_FILE=infra/td-dev.json" >> $GITHUB_ENV
+          fi
+
+      # 🔹 Configure AWS credentials dynamically
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ env.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ env.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      # 🔹 Login to Amazon ECR
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v2
+
+      # 🔹 Build and push image
+      - name: Build and Push Docker Image
+        run: |
+          COMMIT_ID=$(git rev-parse --short HEAD)
+          IMAGE_URI=${{ steps.login-ecr.outputs.registry }}/$ECR_REPO:$COMMIT_ID
+          docker build -t $IMAGE_URI .
+          docker push $IMAGE_URI
+          echo "IMAGE_URI=$IMAGE_URI" >> $GITHUB_ENV
+
+      # 🔹 Render correct ECS task definition
+      - name: Render new ECS task definition
+        run: |
+          sed "s|<IMAGE>|${IMAGE_URI}|g" $TASKDEF_FILE > ecs-taskdef.json
+
+      # 🔹 Register ECS Task Definition
+      - name: Register ECS Task Definition
+        run: |
+          aws ecs register-task-definition \
+            --cli-input-json file://ecs-taskdef.json
+
+      # 🔹 Update ECS Service
+      - name: Update ECS Service
+        run: |
+          FAMILY=$(jq -r '.family' ecs-taskdef.json)
+          REVISION=$(aws ecs describe-task-definition --task-definition $FAMILY \
+                        --query 'taskDefinition.revision' --output text \
+                        --region $AWS_REGION)
+          aws ecs update-service \
+            --cluster $CLUSTER \
+            --service $SERVICE \
+            --task-definition ${FAMILY}:${REVISION} \
+            --region $AWS_REGION
