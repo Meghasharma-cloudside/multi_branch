@@ -4,35 +4,6 @@ permissions:
   id-token: write
   contents: read
 
-on:
-  push:
-    branches:
-      - main
-      - staging
-      - dev
-
-jobs:
-  deploy:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      - name: Configure AWS credentials via OIDC
-        uses: aws-actions/configure-aws-credentials@v4
-        with:
-          role-to-assume: arn:aws:iam::004642588605:role/github-ecs-deploy-role
-          aws-region: us-east-2
-
-
-
-/*
-name: CD - Build & Deploy to ECS
-
-permissions:
-  id-token: write
-  contents: read
-
 
 on:
   push:
@@ -139,4 +110,4 @@ jobs:
             --service $SERVICE \
             --task-definition ${FAMILY}:${REVISION} \
             --region $AWS_REGION
-*/
+
