@@ -1,6 +1,6 @@
 {
   "family": "prod-app-taskdef",
-  "executionRoleArn": "arn:aws:iam::004642588605:role/ecsTaskExecutionRole",
+  "executionRoleArn": "arn:aws:iam::062093043642:role/ecsTaskExecutionRole",
   "networkMode": "awsvpc",
   "containerDefinitions": [
     {
