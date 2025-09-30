@@ -42,29 +42,29 @@ jobs:
           if [[ "$BRANCH" == "main" ]]; then
             echo "AWS_ACCESS_KEY_ID=${{ secrets.PROD_AWS_ACCESS_KEY_ID }}" >> $GITHUB_ENV
             echo "AWS_SECRET_ACCESS_KEY=${{ secrets.PROD_AWS_SECRET_ACCESS_KEY }}" >> $GITHUB_ENV
-            echo "AWS_REGION=us-east-1" >> $GITHUB_ENV
-            echo "CLUSTER=my-prod-cluster" >> $GITHUB_ENV
-            echo "SERVICE=my-prod-service" >> $GITHUB_ENV
-            echo "ECR_REPO=my-app-prod" >> $GITHUB_ENV
-            echo "TASKDEF_FILE=infra/td-prod.json" >> $GITHUB_ENV
+            echo "AWS_REGION=us-east-2" >> $GITHUB_ENV
+            echo "CLUSTER=prod-cluster" >> $GITHUB_ENV
+            echo "SERVICE=prod-service" >> $GITHUB_ENV
+            echo "ECR_REPO=app-prod" >> $GITHUB_ENV
+            echo "TASKDEF_FILE=task-definition/prodtd.json" >> $GITHUB_ENV
 
           elif [[ "$BRANCH" == "staging" ]]; then
             echo "AWS_ACCESS_KEY_ID=${{ secrets.STAGING_AWS_ACCESS_KEY_ID }}" >> $GITHUB_ENV
             echo "AWS_SECRET_ACCESS_KEY=${{ secrets.STAGING_AWS_SECRET_ACCESS_KEY }}" >> $GITHUB_ENV
             echo "AWS_REGION=us-east-2" >> $GITHUB_ENV
-            echo "CLUSTER=my-staging-cluster" >> $GITHUB_ENV
-            echo "SERVICE=my-staging-service" >> $GITHUB_ENV
-            echo "ECR_REPO=my-app-staging" >> $GITHUB_ENV
-            echo "TASKDEF_FILE=infra/td-staging.json" >> $GITHUB_ENV
+            echo "CLUSTER=staging-cluster" >> $GITHUB_ENV
+            echo "SERVICE=staging-service" >> $GITHUB_ENV
+            echo "ECR_REPO=app-staging" >> $GITHUB_ENV
+            echo "TASKDEF_FILE=task-definition/stagetd.json" >> $GITHUB_ENV
 
           else
             echo "AWS_ACCESS_KEY_ID=${{ secrets.DEV_AWS_ACCESS_KEY_ID }}" >> $GITHUB_ENV
             echo "AWS_SECRET_ACCESS_KEY=${{ secrets.DEV_AWS_SECRET_ACCESS_KEY }}" >> $GITHUB_ENV
-            echo "AWS_REGION=us-west-2" >> $GITHUB_ENV
-            echo "CLUSTER=my-dev-cluster" >> $GITHUB_ENV
-            echo "SERVICE=my-dev-service" >> $GITHUB_ENV
-            echo "ECR_REPO=my-app-dev" >> $GITHUB_ENV
-            echo "TASKDEF_FILE=infra/td-dev.json" >> $GITHUB_ENV
+            echo "AWS_REGION=us-east-2" >> $GITHUB_ENV
+            echo "CLUSTER=dev-cluster" >> $GITHUB_ENV
+            echo "SERVICE=dev-service" >> $GITHUB_ENV
+            echo "ECR_REPO=app-dev" >> $GITHUB_ENV
+            echo "TASKDEF_FILE=task-definition/devtd.json" >> $GITHUB_ENV
           fi
 
       # 🔹 Configure AWS credentials dynamically
