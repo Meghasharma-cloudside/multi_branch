@@ -55,7 +55,7 @@ jobs:
             echo "CLUSTER=staging-cluster" >> $GITHUB_ENV
             echo "SERVICE=staging-service" >> $GITHUB_ENV
             echo "ECR_REPO=app-staging" >> $GITHUB_ENV
-            echo "TASKDEF_FILE=task-definition/stagetd.json" >> $GITHUB_ENV
+            echo "TASKDEF_FILE=task-definition/stagingtd.json" >> $GITHUB_ENV
 
           else
             echo "AWS_ACCESS_KEY_ID=${{ secrets.DEV_AWS_ACCESS_KEY_ID }}" >> $GITHUB_ENV
