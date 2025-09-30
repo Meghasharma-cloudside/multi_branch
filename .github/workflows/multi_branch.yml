@@ -38,7 +38,7 @@ jobs:
             echo "ECR_REPO=app-staging" >> $GITHUB_ENV
             echo "TASKDEF_FILE=task-definition/stagingtd.json" >> $GITHUB_ENV
 
-          else
+          elif [[ "$BRANCH" == "dev" ]]; then
             echo "AWS_ACCESS_KEY_ID=${{ secrets.DEV_AWS_ACCESS_KEY_ID }}" >> $GITHUB_ENV
             echo "AWS_SECRET_ACCESS_KEY=${{ secrets.DEV_AWS_SECRET_ACCESS_KEY }}" >> $GITHUB_ENV
             echo "AWS_REGION=us-east-2" >> $GITHUB_ENV
@@ -46,6 +46,10 @@ jobs:
             echo "SERVICE=dev-service" >> $GITHUB_ENV
             echo "ECR_REPO=app-dev" >> $GITHUB_ENV
             echo "TASKDEF_FILE=task-definition/devtd.json" >> $GITHUB_ENV
+
+          else
+            echo "❌ ERROR: Invalid branch '$BRANCH'. Allowed branches are: main, staging, dev."
+            exit 1
           fi
 
       # 🔹 Configure AWS credentials dynamically
